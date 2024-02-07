@@ -139,4 +139,8 @@ var layerDatas = [
 		'LAYERS':'demo_select',
 		'version':'1.3.0'
 	},'DEMO_SELECT']	
+	,[{
+		'LAYERS':'dpgis:bnag_left',
+		'version':'1.1.0'
+	},'BNAG_LEFT']	
 ];
