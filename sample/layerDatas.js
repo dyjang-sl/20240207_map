@@ -140,7 +140,15 @@ var layerDatas = [
 		'version':'1.3.0'
 	},'DEMO_SELECT']	
 	,[{
-		'LAYERS':'dpgis:bnag_left',
+		'LAYERS':'dpgis:41_left',
 		'version':'1.1.0'
 	},'BNAG_LEFT']	
+	,[{
+		'LAYERS':'dpgis:41_right',
+		'version':'1.1.0'
+	},'BNAG_RIGHT']	
+	,[{
+		'LAYERS':'dpgis:bangmun_group',
+		'version':'1.1.0'
+	},'BNAG_GROUP']	
 ];

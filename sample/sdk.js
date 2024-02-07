@@ -45,11 +45,11 @@ SDK.prototype.ajaxTranGET = function(url, callback, params){
 SDK.prototype.setLayer = function(_params, _name, _callback) {
 
 	var thisObj = this;
-	if(_name == "BNAG_LEFT"){
-		console.log("BNAG_LEFT");
+	if(_name == "BNAG_LEFT" || _name == "BNAG_RIGHT" || _name == "BNAG_GROUP"){
+		console.log(_name);
 		thisObj.source_wms = 'http://10.168.0.101:8080/geoserver/wms';		
 	}
-	
+
 	var wmsSource = new ol.source.ImageWMS({
 		url: thisObj.source_wms,
 		//params: {'LAYERS':'dpgis:mv_vlnrb_pt_group','version':'1.1.0'},
