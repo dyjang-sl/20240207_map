@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="kr">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.4.4/proj4.js"></script>
+
+    <script src="/openlayers/loader_root.js?id=01_sl_animation"></script>	
+    <script src="./mapController.js"></script>
+    <script src="./sdk.js"></script>
+    <script src="./layerDatas.js"></script>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/openlayers/dist/ol.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ol3-echarts/dist/ol3Echarts.js"></script>
+
+    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=rmb88jv1l8&submodules=geocoder,visualization"></script>
+
+    <style>
+        .ol-popup {
+          position: absolute;
+          background-color: white;
+          -webkit-filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+          filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+          padding: 15px;
+          border-radius: 10px;
+          border: 1px solid #cccccc;
+          bottom: 12px;
+          left: -50px;
+          min-width: 280px;
+        }
+        .ol-popup:after, .ol-popup:before {
+          top: 100%;
+          border: solid transparent;
+          content: " ";
+          height: 0;
+          width: 0;
+          position: absolute;
+          pointer-events: none;
+        }
+        .ol-popup:after {
+          border-top-color: white;
+          border-width: 10px;
+          left: 48px;
+          margin-left: -10px;
+        }
+        .ol-popup:before {
+          border-top-color: #cccccc;
+          border-width: 11px;
+          left: 48px;
+          margin-left: -11px;
+        }
+        .ol-popup-closer {
+          text-decoration: none;
+          position: absolute;
+          top: 2px;
+          right: 8px;
+        }
+        .ol-popup-closer:after {
+          content: "✖";
+        }
+    </style>
+
+    <script>
+        var maps;
+        var naverMaps;
+        var content;
+        var closer;
+        // 초기화
+        function initMap() {
+            maps = new MapController("map_area");
+
+            content = document.getElementById('popup-content');
+            closer = document.getElementById('popup-closer');
+
+            closer.onclick = function() {
+                maps.setOverlayPosition(undefined);
+                closer.blur();
+                return false;
+            };
+
+            // maps.map.on('pointerup', function(evt) {
+                
+            //     var xy = ol.proj.transform([evt.coordinate[0],evt.coordinate[1]],'EPSG:3857','EPSG:4326');
+            //     console.log("pointerup="+xy);
+            //     naverMaps.setCenter(new naver.maps.LatLng(xy[1], xy[0]));
+            // });
+
+            var zoomChange=false;
+            maps.map.on('wheel', function(evt) {
+                zoomChange=true;
+                openlayersControll = true;
+                console.log("wheel="+maps.map.getView().getZoom());
+            });
+            maps.map.on('movestart', function(evt) {
+               
+                openlayersControll = true;
+            });
+            maps.map.on('moveend', function(evt) {
+                
+                if(zoomChange){
+                    var zoomLv = maps.map.getView().getZoom();
+                    console.log("moveend getZoom="+zoomLv);
+                    naverMaps.setZoom(zoomLv);
+                }
+                try{
+                    evt.coordinate = maps.map.getView().getCenter();
+                    var xy = ol.proj.transform([evt.coordinate[0],evt.coordinate[1]],'EPSG:3857','EPSG:4326');
+                    console.log("moveend getCenter="+xy);
+                    //naverMaps.setCenter(new naver.maps.LatLng(xy[1], xy[0]));
+                }catch(e){}
+                
+                openlayersControll = false;
+            });
+
+            var openlayersControll = false; // 오픈레이어지 지도 컨트롤 여부
+            maps.map.on('pointerdrag', function(evt) {		
+                // openlayersControll = true;
+
+                // evt.coordinate = maps.map.getView().getCenter();
+                // var xy = ol.proj.transform([evt.coordinate[0],evt.coordinate[1]],'EPSG:3857','EPSG:4326');
+                // console.log("pointerdrag="+xy);
+                // naverMaps.setCenter(new naver.maps.LatLng(xy[1], xy[0]));
+            });
+
+            maps.map.on('propertychange', function(evt) {		
+                
+                console.log("propertychange=");
+            });
+
+            maps.map.on('precompose', function(evt) {		
+                
+                //openlayersControll = true;
+
+                evt.coordinate = maps.map.getView().getCenter();
+                var xy = ol.proj.transform([evt.coordinate[0],evt.coordinate[1]],'EPSG:3857','EPSG:4326');
+                //console.log("postrender="+xy);
+                naverMaps.setCenter(new naver.maps.LatLng(xy[1], xy[0]));
+            });
+
+            maps.map.on('postrender', function(evt) {		
+                
+                // openlayersControll = true;
+
+                // evt.coordinate = maps.map.getView().getCenter();
+                // var xy = ol.proj.transform([evt.coordinate[0],evt.coordinate[1]],'EPSG:3857','EPSG:4326');
+                // //console.log("postrender="+xy);
+                // naverMaps.setCenter(new naver.maps.LatLng(xy[1], xy[0]));
+            });
+
+            maps.map.on('change', function(evt) {		
+                
+                console.log("change=");
+            });
+
+
+            // 네이버========================================================
+            // size 옵션이 생략되면 map DOM 요소의 HTML 렌더링 크기로 자동으로 조정됩니다.
+            var naverMaps = new naver.maps.Map('map_area_naver', {
+                center: new naver.maps.LatLng(36.20630219467613, 127.60637172173858),
+                zoom: 8,
+                minZoom: 6,
+                //mapTypeId: naver.maps.MapTypeId.HYBRID,
+                zoomControl: true,
+                zoomControlOptions: {
+                    position: naver.maps.Position.TOP_RIGHT
+                },
+                mapDataControl: false,
+                logoControlOptions: {
+                    position: naver.maps.Position.LEFT_BOTTOM
+                },
+                disableKineticPan: false
+            });
+
+            var semaphore = false;
+
+            naver.maps.Event.once(naverMaps, 'init', function() {
+                naverMaps.setOptions({
+                    mapTypeControl: true,
+                    scaleControl: false,
+                    logoControl: false
+                });
+
+                // 미니 맵이 들어갈 HTML 요소를 controls 객체에 추가합니다. 가장 오른쪽 아래에 위치하도록 다른 옵션들을 잠시 끕니다.
+                naverMaps.controls[naver.maps.Position.BOTTOM_RIGHT].push($("#map_area_naver_2")[0]);
+                naverMaps.setOptions({
+                    scaleControl: true,
+                    logoControl: true,
+                });
+
+                var minimap = new naver.maps.Map('map_area_naver_2', { //미니 맵 지도를 생성합니다.
+                    bounds: naverMaps.getBounds(),
+                    scrollWheel: false,
+                    scaleControl: false,
+                    mapDataControl: false,
+                    logoControl: false
+                });
+
+                naver.maps.Event.addListener(naverMaps, 'bounds_changed', function(bounds) {
+                    if (semaphore) return;
+
+                    //console.log(bounds);
+                    minimap.fitBounds(bounds);
+                });
+                naver.maps.Event.addListener(naverMaps, 'center_changed', function(center) {
+                    if (semaphore) return;
+
+                    //console.log("center_changed="+naver.maps.LatLng(center));
+                    var obj = naver.maps.LatLng(center);
+                    var params=[];
+                    params.push(obj.lng());
+                    params.push(obj.lat());
+
+                    if(!openlayersControll){ // 오픈레이어 지도로 컨트롤 중일때 변경 안함
+                        openLayerMapCenter(params);
+                    }
+                    
+                });
+                naver.maps.Event.addListener(naverMaps, 'mapTypeId_changed', function(mapTypeId) {
+                    var toTypes = {
+                        "normal": "hybrid",
+                        "terrain": "satellite",
+                        "satellite": "terrain",
+                        "hybrid": "normal"
+                    };
+
+                    if (!toTypes[mapTypeId]) {
+                        return;
+                    }
+
+                    minimap.setMapTypeId(toTypes[mapTypeId]);
+                });
+                naver.maps.Event.addListener(minimap, 'drag', function() {
+                    semaphore = true;
+                    naverMaps.panTo(minimap.getCenter());
+                    naver.maps.Event.once(naverMaps, 'idle', function() {
+                        semaphore = false;
+                    });
+
+                });
+            });
+
+            // 네이버 지도 이동
+            // naver.maps.Event.addListener(naverMaps, 'dragend', function(e) {
+            //     //console.log(e);
+            //     //console.log(e.coord._lat);
+
+            //     var params=[];
+            //     params.push(e.coord._lng);
+            //     params.push(e.coord._lat);
+            //     openLayerMapCenter(params);
+            // });
+            // 네이버 지도 줌 변경
+            naver.maps.Event.addListener(naverMaps, 'zoom_changed', function(e) {
+                console.log(e);
+                maps.setZoom(e);
+            });
+
+        }
+        function openLayerMapCenter(params){
+            maps.setCenter(params);
+        }
+        
+        function setMapLayer(no){
+
+            try{
+                //maps.removeLayer("Hybrid");
+                var types = maps.map.getLayers().getArray();
+                for(var i=1; i < types.length; i++){ // 0번째는 베이스 타일
+                    if(types[i].type === "TILE"){
+                        (maps.map.getLayers().getArray()).splice(i,1);
+                    }
+                }
+            }catch(e){}
+
+            var existingLayer = maps.map.getLayers().getArray()[0];
+            // 새로운 지도타입 소스 생성
+            var source;
+            if(2 == no || 3 == no){ // 위성
+                source = new ol.source.XYZ({
+                    url: 'http://xdworld.vworld.kr:8080/2d/Satellite/service/{z}/{x}/{y}.jpeg',
+                });
+                // 기존 레이어에 지도타입 소스 변경
+                existingLayer.setSource(source);
+                // 새로고침
+                maps.map.updateSize();
+
+                if(3 == no){ // 하이브리드
+                    var addTileLayer = new ol.layer.Tile({ //타일 생성
+                            visible : true, //보여짐 여부
+                            type : 'satellite',
+                            source : new ol.source.XYZ({ //vworld api 사용
+                                url: 'http://xdworld.vworld.kr:8080/2d/Hybrid/service/{z}/{x}/{y}.png',
+                            }),
+                            id: 'Hybrid',
+                        });
+                    maps.map.addLayer(addTileLayer);
+                }
+            }else{ // 일반
+                source = new ol.source.XYZ({
+                    url: 'http://xdworld.vworld.kr:8080/2d/Base/service/{z}/{x}/{y}.png',
+                })
+                // 기존 레이어에 지도타입 소스 변경
+                existingLayer.setSource(source);
+                // 새로고침
+                maps.map.updateSize();
+            }
+            
+        }
+        
+        // GIS Server 기능
+        function buttonClick(no){
+            maps.addLayer(layerDatas[no][0],layerDatas[no][1],function(response, params){
+                console.log("response="+response);
+                console.log("params="+params);
+
+                // 팝업
+                if(params.name == "DPGIS2-JIJUK"){
+                    content.innerHTML = '<p>pnu :</p><code>' + response.features[0].properties.pnu +'</code>';
+                    maps.setOverlayPosition(params.coordinate);
+                }
+
+                
+            });
+
+            if(no == 22){ // p.10 => 구축관로 예상 결과
+                var params=[];
+                params.push(126.84214593562383);
+                params.push(37.59802524403525);
+
+                maps.setZoom(16);
+                maps.setCenter(params);
+            }
+            if(no == 25){ // p.15 => 구축관로 예상 결과 - 구간
+                var params=[];
+                params.push(126.6752594441295);
+                params.push(37.57454292556048);
+
+                maps.setZoom(20);
+                maps.setCenter(params);
+            }
+        }
+
+        // 그리기
+        function drawing(type){
+            maps.addDrawing(type, function(){
+                console.log("dragend~");
+                // 사각형, 원형, 다각형 그리기
+
+                maps.removeAllLayer();
+
+                drawing('End');
+
+                var params=[];
+                //params.push(126.53344813111612);
+                //params.push(37.4754736708867);
+
+                params.push(126.493240	);
+                params.push(37.455893);
+
+                maps.setCenter(params);
+                
+                 
+                buttonClick(34);
+            });
+        }
+        // 그리기 정보
+        function getDrawing(){
+            maps.getDrawingInfo();
+        }
+
+        // 레이어 삭제
+        function removeLayer(){
+            maps.removeAllLayer();
+            $("#popup-closer").trigger("click");
+        }
+
+        // 센터 이동
+        function setCenter(){
+            var params=[];
+            //물치도
+            params.push(126.588625);
+            params.push(37.497413);
+
+            maps.setCenter(params);
+        }
+
+        // 줌레벨 변경
+        function setZoom(zoom){
+            maps.setZoom(zoom);
+        }
+
+        function addMarker(){
+            var params=[];
+
+            params.push(126.493240);
+            params.push(37.455893);
+
+            maps.addMarker(params, "EPSG:4326", "SEARCH_MARKER","https://tmapapi.sktelecom.com/upload/tmap/marker/pin_b_m_p.png",params); // WGS84 좌표계
+        }
+
+        function setOlMap(){
+            
+            var echartslayer = new ol3Echarts(getOption());
+            echartslayer.appendTo(maps.map);
+            
+        }
+
+        function getOption () {
+
+            var topListHtml = '<div class="modal07">';
+            topListHtml +='<p class="title">지역내 이동</p><table><colgroup><col style="width:50%;"><col style="width:50%;"></colgroup><tbody>';
+            topListHtml += '<tr><td>지역구</td><td> 0000 명 (100 %)</td></tr></tbody></table>';
+            topListHtml +='<p class="title">지역외 이동</p><table><colgroup><col style="width:10%;"><col style="width:20%;"><col style="width:25%;"><col style="width:20%;"><col style="width:25%;"></colgroup><tbody>';       		
+            topListHtml +='<tr><td class="bg01 bd_r"></td><td colspan="2" class="bg01 bd_r ta_c">전입</td><td colspan="2" class="bg01 ta_c">전출</td></tr>';
+            topListHtml += '<tr><th class="bd_r">Top 1</th><td>중구</td><td>000 명 (100%)</td><td>마포구</td><td>000 명 (100%)</td></tr>';
+            topListHtml += '</tbody></table></div>';
+
+            var geoCoordMap = {
+            'Mid': [127.384586, 36.350179], // 대전 시청
+            
+            'Start': [126.978328, 37.566712], // 서울 시청
+            
+            'End': [129.075035, 35.180344], // 부산시청
+            
+            };
+            var BJData = [
+            [{name: 'Start'}, {name: 'Mid', value: 95}],
+            [{name: 'Start'}, {name: 'End', value: 90}]
+            
+            ];
+            var SHData = [
+
+            [{name: 'Mid'}, {name: 'End', value: 80}],
+            [{name: 'Mid'}, {name: 'Start', value: 30}]
+            ];
+            var GZData = [
+            [{name: 'End'}, {name: 'Mid', value: 95}],
+            [{name: 'End'}, {name: 'Start', value: 30}]
+            ];
+            //var planePath = 'path://M1705.06,1318.313v-89.254l-319.9-221.799l0.073-208.063c0.521-84.662-26.629-121.796-63.961-121.491c-37.332-0.305-64.482,36.829-63.961,121.491l0.073,208.063l-319.9,221.799v89.254l330.343-157.288l12.238,241.308l-134.449,92.931l0.531,42.034l175.125-42.917l175.125,42.917l0.531-42.034l-134.449-92.931l12.238-241.308L1705.06,1318.313z';
+            //var planePath = 'path://M248.761,92c0,9.801-7.93,17.731-17.71,17.731c-0.319,0-0.617,0-0.935-0.021c-10.035,37.291-51.174,65.206-100.414,65.206 c-49.261,0-90.443-27.979-100.435-65.334c-0.765,0.106-1.531,0.149-2.317,0.149c-9.78,0-17.71-7.93-17.71-17.731 c0-9.78,7.93-17.71,17.71-17.71c0.787,0,1.552,0.042,2.317,0.149C39.238,37.084,80.419,9.083,129.702,9.083c49.24,0,90.379,27.937,100.414,65.228h0.021c0.298-0.021,0.617-0.021,0.914-0.021C240.831,74.29,248.761,82.22,248.761,92z'
+            //var planePath = 'path://M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z';
+            //var planePath = 'path://M8,12c2.21,0,4-1.79,4-4s-1.79-4-4-4S4,5.79,4,8S5.79,12,8,12z M8,13c-2.67,0-8,1.34-8,4v3h16v-3C16,14.34,10.67,13,8,13z M12.51,4.05C13.43,5.11,14,6.49,14,8s-0.57,2.89-1.49,3.95C14.47,11.7,16,10.04,16,8S14.47,4.3,12.51,4.05z M16.53,13.83C17.42,14.66,18,15.7,18,17v3h2v-3C20,15.55,18.41,14.49,16.53,13.83z';
+            var planePath = 'path://M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z';
+
+            var convertData = function (data) {
+            var res = [];
+            for (var i = 0; i < data.length; i++) {
+                var dataItem = data[i];
+                var fromCoord = geoCoordMap[dataItem[0].name];
+                var toCoord = geoCoordMap[dataItem[1].name];
+                if (fromCoord && toCoord) {
+                res.push({
+                    fromName: dataItem[0].name,
+                    toName: dataItem[1].name,
+                    coords: [fromCoord, toCoord]
+                });
+                }
+            }
+            return res;
+            };
+            var color = ['#FF00FF', '#ffa022', '#46bee9'];
+            var series = [];
+            [
+            ['Start', BJData], ['Mid', SHData], ['End', GZData]].forEach(
+            function (item, i) {
+                series.push({
+                    name: item[0] + ' Top10-'+i,
+                    type: 'lines',
+                    zlevel: 10,
+                    effect: {
+                    show: true,
+                    period: 10,
+                    trailLength: 0.5,
+                    color: '#fff',
+                    symbolSize: 10
+                    },
+                    lineStyle: {
+                    normal: {
+                        color: color[i],
+                        width: 2,
+                        curveness: 0.2
+                    }
+                    },
+                    data: convertData(item[1])
+                },
+                {
+                    name: item[0] + ' Top10',
+                    type: 'lines',
+                    zlevel: 2,
+                    effect: {
+                    show: true,
+                    period: 6,
+                    trailLength: 0,
+                    symbol: planePath,
+                    symbolSize: 15
+                    },
+                    lineStyle: {
+                    normal: {
+                        color: color[i],
+                        width: 10,
+                        opacity: 0.4,
+                        curveness: 0.2
+                    }
+                    },
+                    data: convertData(item[1])
+                },
+                {
+                    name: item[0] + ' Top10',
+                    type: 'effectScatter',
+                    coordinateSystem: 'geo',
+                    zlevel: 2,
+                    rippleEffect: {
+                    brushType: 'stroke'
+                    },
+                    label: {
+                    normal: {
+                        show: true,
+                        position: 'right',
+                        formatter: '{b}'
+                    }
+                    },
+                    symbolSize: function (val) {
+                    return val[2] / 8;
+                    },
+                    itemStyle: {
+                    normal: {
+                        color: color[i]
+                    }
+                    },
+                    data: item[1].map(function (dataItem) {
+                    return {
+                        name: dataItem[1].name,
+                        value: geoCoordMap[dataItem[1].name].concat([dataItem[1].value])
+                    };
+                    })
+                });
+            });
+            return {
+            tooltip: {
+                trigger: 'item'
+            },
+            series: series,
+            formatter:topListHtml
+            };
+        }
+
+    </script>
+</head>
+<body onload="initMap();">
+<b>DOPCO Sample</b>
+    <br/><br/>
+    <div>
+        <input type="button" value="모든 레이어 삭제" onclick="removeLayer()"><br/>
+        <input type="button" value="지적도" onclick="buttonClick(20)">
+        <input type="button" value="DEM" onclick="buttonClick(21)">
+
+        <input type="button" value="통합관로" onclick="buttonClick(14)">
+        <input type="button" value="통합관로(POINT)" onclick="buttonClick(10)">
+
+        <input type="button" value="ILI관로" onclick="buttonClick(12)">
+        
+        <input type="button" value="이설관로" onclick="buttonClick(11)">
+        <input type="button" value="준공관로" onclick="buttonClick(13)">
+
+        <input type="button" value="밸브박스(보정)" onclick="buttonClick(3)">
+
+        <input type="button" value="정류기" onclick="buttonClick(32)">
+        <input type="button" value="테스트박스" onclick="buttonClick(33)">
+
+        <input type="button" value="ILI결함(보정)" onclick="buttonClick(1)">
+        <input type="button" value="ILI결함(SAMS)" onclick="buttonClick(2)">
+
+        <input type="button" value="DPGIS1" onclick="buttonClick(22)">
+        <input type="button" value="DPGIS2" onclick="buttonClick(23)">
+        <input type="button" value="DPGIS3" onclick="buttonClick(24)">
+        <input type="button" value="DPGIS1-GUGAN" onclick="buttonClick(25)">
+        <input type="button" value="DPGIS2-GUGAN" onclick="buttonClick(26)">
+        <input type="button" value="DPGIS3-GUGAN" onclick="buttonClick(27)">
+        <input type="button" value="DPGIS4-GUGAN" onclick="buttonClick(28)">
+        <input type="button" value="DPGIS5-GUGAN" onclick="buttonClick(29)">
+
+        <input type="button" value="DPGIS1-JIJUK" onclick="buttonClick(30)">
+        <input type="button" value="DPGIS2-JIJUK" onclick="buttonClick(31)">
+
+        <input type="button" value="고저심도" onclick="buttonClick(0)">
+        
+        
+        <input type="button" value="밸브박스(SAMS)" onclick="buttonClick(4)">
+        <input type="button" value="취약구간" onclick="buttonClick(5)">
+        <input type="button" value="취약구간(원본)" onclick="buttonClick(6)">
+        <input type="button" value="신규 통합관로(Point)" onclick="buttonClick(7)">
+        <input type="button" value="신규 통합관로" onclick="buttonClick(8)">
+        <input type="button" value="신규구축구간(ILI+이설)" onclick="buttonClick(9)">            
+        
+        <input type="button" value="지정영역 내 시설물" onclick="buttonClick(15)">
+        <input type="button" value="지정영역 내 관로" onclick="buttonClick(16)">
+        <input type="button" value="지정영역" onclick="buttonClick(17)">
+        <input type="button" value="관로 공간분석" onclick="buttonClick(18)">
+        <input type="button" value="관로 중첩 지적도" onclick="buttonClick(19)">
+         
+        <br/>
+        <input type="button" value="센터이동" onclick="setCenter()">
+        <input type="button" value="줌 이동-7레벨" onclick="setZoom(7)">
+        <input type="button" value="줌 이동-16레벨" onclick="setZoom(16)">
+        <input type="button" value="원그리기" onclick="drawing('Circle')">
+        <input type="button" value="다각형 그리기" onclick="drawing('Polygon')">
+        <input type="button" value="도형 지우기" onclick="drawing('None')">
+        <input type="button" value="그리기 종료" onclick="drawing('End')">
+        <input type="button" value="그리기 정보보기" onclick="getDrawing()">
+        <input type="button" value="원 중심 마커표출" onclick="addMarker()">
+        <input type="button" value="setOlMap 추가" onclick="setOlMap()">
+
+        <br/>
+        <input type="button" value="타일레이어-일반" onclick="setMapLayer(1)">
+        <input type="button" value="타일레이어-위성" onclick="setMapLayer(2)">
+        <input type="button" value="타일레이어-하이브리드" onclick="setMapLayer(3)">
+    </div>
+
+    <div id="map_area" style="width: 49.5%;height:680px;border:1px;border-style: solid;position: absolute;border-color: blue"></div>
+    <div id="popup" class="ol-popup">
+        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+        <div id="popup-content"></div>
+    </div>
+    <div id="map_area_naver" style="height: 680px;border: 1px solid rgb(255, 0, 0);position: relative;left: 50%;overflow: hidden;background: rgb(248, 249, 250);width: 50%;"></div>
+    <!-- <div id="map_area_naver_2" style="height: 280px;border: 1px solid rgb(14, 179, 41);position: relative;left: 50%;overflow: hidden;background: rgb(248, 249, 250);width: 50%;"></div> -->
+    <div id="map_area_naver_2" style="height: 280px; width: 0px; border: 0px solid rgb(14, 179, 41);"></div>
+    
+</body>
+</html>    
+
