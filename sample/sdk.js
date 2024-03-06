@@ -47,7 +47,8 @@ SDK.prototype.setLayer = function(_params, _name, _callback) {
 	var thisObj = this;
 	if(_name == "BNAG_LEFT" || _name == "BNAG_RIGHT" || _name == "BNAG_GROUP"){
 		console.log(_name);
-		thisObj.source_wms = 'http://10.168.0.101:8080/geoserver/wms';		
+		//이희재 과장 local pc ip 확인 - geoserver 가동 확인
+		thisObj.source_wms = 'http://10.168.0.104:8080/geoserver/wms';		
 	}
 
 	var wmsSource = new ol.source.ImageWMS({

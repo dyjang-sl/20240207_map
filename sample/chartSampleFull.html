@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="kr">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.4.4/proj4.js"></script>
+
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/highcharts-more.js"></script>
+    <script src="https://code.highcharts.com/modules/variwide.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+    <script src="./chartSampleFull.js"></script>
+    <link href="./chartSampleFull.css" rel="stylesheet" type="text/css">
+
+    <script src="/openlayers/loader_root.js?id=01_sl_animation"></script>	
+    <script src="./mapController.js"></script>
+    <script src="./sdk.js"></script>
+    <script src="./layerDatas.js"></script>
+    <script src="./echarts.js"></script>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/openlayers/dist/ol.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ol3-echarts/dist/ol3Echarts.js"></script>
+
+    <!-- <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=rmb88jv1l8&submodules=geocoder,visualization"></script> -->
+    <style>
+        .ol-popup {
+          position: absolute;
+          background-color: white;
+          -webkit-filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+          filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+          padding: 15px;
+          border-radius: 10px;
+          border: 1px solid #cccccc;
+          bottom: 12px;
+          left: -50px;
+          min-width: 280px;
+        }
+        .ol-popup:after, .ol-popup:before {
+          top: 100%;
+          border: solid transparent;
+          content: " ";
+          height: 0;
+          width: 0;
+          position: absolute;
+          pointer-events: none;
+        }
+        .ol-popup:after {
+          border-top-color: white;
+          border-width: 10px;
+          left: 48px;
+          margin-left: -10px;
+        }
+        .ol-popup:before {
+          border-top-color: #cccccc;
+          border-width: 11px;
+          left: 48px;
+          margin-left: -11px;
+        }
+        .ol-popup-closer {
+          text-decoration: none;
+          position: absolute;
+          top: 2px;
+          right: 8px;
+        }
+        .ol-popup-closer:after {
+          content: "✖";
+        }
+    </style>
+</head>
+<body onload="initMap();">
+    <div>
+        <div class="main-container">
+            <div class="title">
+                성남시 타 지역간 유입 및 유출인구 지도 시각화
+            </div>
+            <div id="container_map" class="sub-container"></div>
+            <!-- <div id="map_area" style="width: 49.5%;height:680px;border:1px;border-style: solid;position: absolute;border-color: blue"></div> -->
+            <div id="popup" class="ol-popup">
+                <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+                <div id="popup-content"></div>
+            </div> 
+            <div id="container_map2" class="sub-container2"></div>
+        </div>
+        <div class="main-container">
+            <div class="title">
+                성남시 유입 및 유출인구 차트
+                <br/><span class="sub-title">(인구특성 : 성별 / 통행특성: 이동수단별)</span>
+            </div>
+            <div id="container_1_1" class="sub-container"></div> 
+            <div id="container_1_2" class="sub-container2"></div>
+        </div>
+        <div class="main-container">
+            <div class="title">
+                성남시 유입 및 유출인구 시계열 차트
+                <br/><span class="sub-title">(인구특성 : 성별 / 통행특성: 이동수단별)</span>
+            </div>
+            <div id="container_2_1" class="sub-container"></div> 
+            <div id="container_2_2" class="sub-container2"></div>
+        </div>
+        <div class="main-container">
+            <div class="title">
+                성남시 타 지역간 유입 및 유출인구 차트
+                <br/><span class="sub-title">(인구특성 : 성별 / 통행특성: 이동수단별)</span>
+            </div>
+            <div id="container_3_1" class="sub-container"></div> 
+            <div id="container_3_2" class="sub-container2"></div>
+        </div>
+        
+        <!--지도2 (이희재 과장 local pc ip 확인 - geoserver 가동 확인)-->
+        <div class="main-container" style="margin-top: 40px">
+            <div class="title">
+                경기도 방문자 체류시간 지도 시각화
+            </div>
+            <div id="container_map3" class="sub-container"></div>
+            <!-- <div id="map_area" style="width: 49.5%;height:680px;border:1px;border-style: solid;position: absolute;border-color: blue"></div> -->
+            <div id="popup" class="ol-popup">
+                <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+                <div id="popup-content"></div>
+            </div> 
+            <div id="container_map4" class="sub-container2"></div>
+        </div>
+        <!--지도2 -->
+        <div class="main-container">
+            <div class="title">
+                성남시 방문자 수 및 체류시간 차트
+                <br/><span class="sub-title">(인구특성: 전체 / 통행특성: 이동목적)</span>
+            </div>
+            <div id="container_5_1" class="sub-container"></div> 
+            <div id="container_5_2" class="sub-container2"></div>
+        </div>
+        <div class="main-container">
+            <div class="title">
+                성남시 방문자 체류시간 시계열 차트
+                <br/><span class="sub-title">(인구특성: 성별/통행특성:이동수단별)</span>
+            </div>
+            <div id="container_6_1" class="sub-container"></div> 
+            <div id="container_6_2" class="sub-container2"></div>
+        </div>
+
+        <!--지도3 (이희재 과장 local pc ip 확인 - geoserver 가동 확인)-->
+        <div class="main-container">
+            <div class="title">
+              경기도 탄소배출량 지도 시각화
+            </div>
+            <div id="container_map5" class="sub-container"></div>
+            <!-- <div id="map_area" style="width: 49.5%;height:680px;border:1px;border-style: solid;position: absolute;border-color: blue"></div> -->
+            <div id="popup" class="ol-popup">
+                <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+                <div id="popup-content"></div>
+            </div> 
+            <div id="container_map6" class="sub-container2"></div>
+        </div>
+        <!--지도3 -->
+        <div class="main-container">
+            <div class="title">
+                성남시 탄소배출량 차트
+                <br/><span class="sub-title">(통행특성: 이동수단)</span>
+            </div>
+            <div id="container_7_1" class="sub-container"></div> 
+            <div id="container_7_2" class="sub-container2"></div>
+        </div>
+        <div class="main-container">
+            <div class="title">
+              성남시 탄소배출량 차트
+                <br/><span class="sub-title">(통행특성: 이동수단)</span>
+            </div>
+            <div id="container_8_1" class="sub-container"></div> 
+            <div id="container_8_2" class="sub-container2"></div>
+        </div>
+
+    </div>
+</body>
+</html>    
+

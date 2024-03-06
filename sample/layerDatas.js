@@ -150,5 +150,9 @@ var layerDatas = [
 	,[{
 		'LAYERS':'dpgis:bangmun_group',
 		'version':'1.1.0'
-	},'BNAG_GROUP']	
+	},'BNAG_GROUP']
+	,[{
+		'LAYERS':'dpgis:bnag_left',
+		'version':'1.1.0'
+	},'BNAG_GROUP']		
 ];
